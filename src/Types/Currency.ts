@@ -1,11 +1,10 @@
 interface Currency {
-    assetId: string,
+    id: number,
+    symbol: string,
     name: string,
-    isCrypto: boolean,
-    startTradeDate: Date,
-    endTradeDate: Date,
-    tradeCount: number,
-    priceInUSD: number,
+    usdPrice: number,
+    btcPrice: number,
+    usdVolume: number
 }
 
 export default Currency;

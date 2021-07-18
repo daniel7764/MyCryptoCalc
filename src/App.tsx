@@ -1,4 +1,3 @@
-import './App.css';
 import ExchangeTable from './Components/ExchangeTable/ExchangeTable';
 
 function App() {

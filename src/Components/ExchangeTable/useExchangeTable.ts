@@ -1,50 +1,69 @@
 import axios from 'axios';
-import React from 'react';
+import { useState, useEffect} from 'react';
 
 import Currency from '../../Types/Currency'
 
-const OK_STATUS = 200;
-const coinApiUrl: string = 'https://rest.coinapi.io/v1';
-const apiKey: string = 'E36D9A48-19BA-485B-9784-695B29C409EC';
+export const OK_STATUS = 200;
+const pageLimit: number = 20;
+const marketData: string = 'market';
+export const apiKey: string = 'yeqvteinmrrs9llr77a7a';
+export const coinApiUrl: string = 'https://api.lunarcrush.com/v2';
 
 const useExchangeTable = (ExchangeTableInput: useExchangeTableInput): useExchangeTableOutput => {
-    const { currencies, setCurrencies } = ExchangeTableInput;
+    const [hasMore, setHasMore] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [currencies, setCurrencies] = useState<Currency[]>([]);
+    const [coinProperties, setCoinProperties] = useState<String[]>([]);
+    const { page } = ExchangeTableInput;
 
     const getCurrenciesData = async () => {
-        const data = await axios.get(coinApiUrl + '/assets', {
-            headers: {
-                'X-CoinAPI-Key': apiKey
+        setIsLoading(true);
+        const response = await axios.get(coinApiUrl + '/assets', {
+            params: {
+                key: apiKey,
+                data: marketData,
+                limit: pageLimit,
+                page: page
             }}
         );
-        if(data.status !== OK_STATUS || !data.data) {
-
+        if(response.status !== OK_STATUS || !response.data.data) {
         } else {
-            const allCurrenciesMapped: Currency[] = data.data.map((currCoin: any) => {
-                return {
-                    assetId: currCoin.asset_id,
-                    name: currCoin.name,
-                    isCrypto: Boolean(currCoin.type_is_crypto),
-                    startTradeDate: currCoin.data_trade_start,
-                    endTradeDate: currCoin.data_trade_end,
-                    tradeCount: currCoin.data_trade_count,
-                    priceInUSD: currCoin.price_usd,
-                }
-            });
-            console.log(allCurrenciesMapped);
-            setCurrencies(allCurrenciesMapped);
+            const allCurrenciesMapped: Currency[] = mapCoinsToArray(response.data.data);
+            coinProperties.length === 0 &&
+                setCoinProperties(Object.getOwnPropertyNames(allCurrenciesMapped[0]));
+            setCurrencies([...currencies, ...allCurrenciesMapped]);
+            setHasMore(response.data.data.length > 0);
+            setIsLoading(false);
         }
     }
 
-    return { getCurrenciesData };
+    const mapCoinsToArray = (data: any) => {
+        return data.map((currCoin: any) => {
+            return {
+                id: currCoin.id,
+                symbol: currCoin.s,
+                name: currCoin.n,
+                usdPrice: currCoin.p,
+                btcPrice: currCoin.p_btc,
+                usdVolume: currCoin.v
+            }
+        });
+    }
+
+    useEffect(() => { getCurrenciesData() }, [page]);
+
+    return { hasMore, isLoading, currencies, coinProperties };
 }
 
 interface useExchangeTableInput {
-    currencies: Currency[],
-    setCurrencies: React.Dispatch<React.SetStateAction<Currency[]>>,
+    page: number
 }
 
 interface useExchangeTableOutput {
-    getCurrenciesData: () => void;
+    hasMore: boolean,
+    isLoading: boolean,
+    currencies: Currency[],
+    coinProperties: String[],
 }
 
 export default useExchangeTable;
